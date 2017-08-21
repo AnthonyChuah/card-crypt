@@ -4,13 +4,15 @@
 #include <vector>
 
 class Cipher {
-  static const int NCARDS = 54;
-  static const int RADIX = 26;
+  static constexpr int NCARDS = 54;
+  static constexpr int RADIX = 26;
+  std::vector<int> initKey_;
   std::vector<int> key_;
   std::vector<int> keystream_;
   static std::vector<int> convertCharsToInts(std::string _chars);
   static std::string convertIntsToChars(std::vector<int> _ints);
  public:
+  Cipher();
   // generateKey should give a vector of length NCARDS (54). This is like shuffling the deck.
   std::vector<int> generateKey();
   // generateKeystream should use the generated key to provide a keystream
