@@ -1,11 +1,11 @@
 #include "Cipher.h"
+// Cipher.h also gives vector, utility, string
 
-#include <vector>
 #include <algorithm>
 
 Cipher::Cipher() {
-  key_.reserve(this->NCARDS);
-  keystream_.reserve(this->NCARDS);
+  key_.reserve(Cipher::NCARDS);
+  keystream_.reserve(Cipher::NCARDS);
 }
 
 std::vector<int> Cipher::generateKey() {
@@ -43,7 +43,7 @@ std::vector<int> Cipher::generateKeystream(int _n) {
     this->swapCards(pos + 1, pos + 2);
     jokers = this->findJokers();
     this->tripleCut(jokers.first, joker.second);
-    pos = key_[this->NCARDS - 1];
+    pos = key_[Cipher::NCARDS - 1];
     this->countCut(pos); // Handle the pos == 54 exception inside helper method
     keystream_[count] = this->findOutput(); // Check if std::vector<int> output(_n) was initialized with len 54!
     if (keystream_[count] < 0) {
@@ -57,7 +57,7 @@ std::vector<int> Cipher::generateKeystream(int _n) {
 std::string Cipher::encrypt(std::string _plaintext) {
   std::vector<int> textInInts = Cipher::convertCharsToInts(_plaintext);
   int nChars = _plaintext.length();
-  key_ = initKey_;
+  key_ = initKey_; // Always reset to the original key before starting encryption
   generateKeystream(nChars);
   // Now add then mod 26
   std::vector<int> ctextInInts(nChars);
@@ -67,7 +67,7 @@ std::string Cipher::encrypt(std::string _plaintext) {
 std::string Cipher::decrypt(std::string _ciphertext) {
   std::vector<int> ctextInInts = Cipher::convertCharsToInts(_ciphertext);
   int nChars = _ciphertext.length();
-  key_ = initKey_;
+  key_ = initKey_; // Always reset to the original key before starting decryption
   generateKeystream(nChars);
   // Now subtract then mod 26. Remember negatives should wrap around
   std::vector<int> textInInts(nChars);
@@ -75,3 +75,45 @@ std::string Cipher::decrypt(std::string _ciphertext) {
 }
 
 // Private helper methods
+std::vector<int> Cipher::convertCharsToInts(std::string _chars) {
+  int nChars = _chars.length();
+  std::vector<int> output(nChars);
+  // Find an efficient way to turn the string into int vector
+  return output;
+}
+
+std::string Cipher::convertIntsToChars(std::vector<int> _ints) {
+  std::stringstream outs;
+  for (auto i : _ints) {
+    // Convert int to char, then stream into outs
+  }
+  return outs.str();
+}
+
+void Cipher::swapCards(int _pos1, int _pos2) {
+}
+
+int Cipher::findJokerA() const {
+  // JokerA's value is 53
+  // Use a C++11-style std::find
+}
+
+int Cipher::findJokerB() const {
+  // JokerB's value is 54
+  // Use a C++11-style std::find
+}
+
+std::pair<int, int> Cipher::findJokers() const {
+  // Jokers are 53 and 54
+}
+
+void Cipher::tripleCut(int _endSlice1, int _startSlice2) {
+}
+
+void Cipher::countCut(int _pos) {
+}
+
+int Cipher::findOutput() const {
+  int topCardValue = key_[0];
+  return key_[topCardValue - 1];
+}
