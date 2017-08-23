@@ -4,6 +4,7 @@
 #include <algorithm>
 
 Cipher::Cipher() {
+  key_.resize(Cipher::NCARDS); // CHECK IF SYNTAX CORRECT
   // key_.reserve(Cipher::NCARDS);
   // Find some way of allocating 54 ints, not reserving memory
 }
@@ -144,13 +145,29 @@ std::pair<int, int> Cipher::findJokers() const {
 
 void Cipher::tripleCut(int _endSlice1, int _startSlice2) {
   // Use std::rotate to perform the tripleCut
+  // Suppose I have deck 0 1 2 3 4 5 6. 0 1 2 is first slice, 3 4 is second, 5 6 is third.
+  // I want to swap 0 1 2 with 5 6, leaving 3 4 in middle.
+  // _endSlice1 position (1-indexed) is 4, which is 3 0-indexed. Notice how it's not inclusive.
+  // "first slice is everything above the first Joker"
+  // "third slice is everything below the second Joker"
+  // GOOGLE: WHAT IF YOU ROTATE EMPTY RANGE
 }
 
 void Cipher::countCut(int _pos) {
+  if (_pos > 52) return;
+  std::rotate(key_.begin(), key_.begin() + _pos, key_.end() - 1);
   // Use std::rotate
+  // e.g. 5 4 3 2 1 0. Last card is 0. Use it to index to first card, value of 5.
+  // Now first slice is the card 5. Second slice is 4 3 2 1. Third slice is 0.
+  // Swap first and second slices: 4 3 2 1 5 0.
 }
 
 int Cipher::findOutput() const {
   int topCardValue = key_[0];
-  return key_[topCardValue - 1];
+  int output = key_[topCardValue - 1];
+  if (output < 0 || output > Cipher::NCARDS)
+    throw std::runtime_exception("Fatal error: there should not be a card with a negative face value");
+  if (output > 52) output = -1;
+  if (output > Cipher::RADIX) output -= Cipher::RADIX;
+  return output;
 }
