@@ -4,17 +4,22 @@
 #include <algorithm>
 
 Cipher::Cipher() {
-  key_.reserve(Cipher::NCARDS);
-  keystream_.reserve(Cipher::NCARDS);
+  // key_.reserve(Cipher::NCARDS);
+  // Find some way of allocating 54 ints, not reserving memory
 }
 
 std::vector<int> Cipher::generateKey() {
   // Loop, or preferably use a range-based mutator to put integers 1 to 54 into the vector
+  int val = 1;
+  for (auto i : this->key_) {
+    *i = val++;
+  }
   // Use std::shuffle (<algorithm>) to shuffle the vector
   std::shuffle(key_.begin(), key_.end());
   // Make a copy for initKey_ as well, because we want to keep the initial key even after
   // the encryption process
   this->initKey_ = key_;
+  return key_;
 }
 
 std::vector<int> Cipher::generateKeystream(int _n) {
@@ -91,26 +96,58 @@ std::string Cipher::convertIntsToChars(std::vector<int> _ints) {
 }
 
 void Cipher::swapCards(int _pos1, int _pos2) {
+  // First, catch the edge-case of the inputs being >= NCARDS
+  if (_pos1 > Cipher::NCARDS) _pos1 -= Cipher::NCARDS;
+  if (_pos2 > Cipher::NCARDS) _pos2 -= Cipher::NCARDS;
+  // Check if std::move can be used to speed up: but compiler optimization should catch it anyway
+  int temp = key_[_pos2 - 1];
+  key_[_pos2] = key_[_pos1];
+  key_[_pos1] = temp;
 }
 
 int Cipher::findJokerA() const {
   // JokerA's value is 53
   // Use a C++11-style std::find
+  std::vector<int>::iterator it;
+  it = std::find(key_.begin(), key_.end(), 53);
+  if (it == key_.end()) throw std::runtime_exception("Fatal error: Cipher's key missing JOKERA value");
+  return *it;
 }
 
 int Cipher::findJokerB() const {
   // JokerB's value is 54
   // Use a C++11-style std::find
+  std::vector<int>::iterator it;
+  it = std::find(key_.begin(), key_.end(), 54);
+  if (it == key_.end()) throw std::runtime_exception("Fatal error: Cipher's key missing JOKERA value");
+  return *it;
 }
 
 std::pair<int, int> Cipher::findJokers() const {
   // Jokers are 53 and 54
+  std::pair<int, int> output; int numFound = 0;
+  for (auto it : key_) {
+    if (*it > 52) {
+      // >52 means it is a JOKERA or JOKERB
+      if (!numFound) {
+	output.first = it - key_.begin() + 1;
+        ++numFound;
+      } else {
+	output.second = it - key_.begin() + 1;
+	++numFound;
+      }
+    }
+  }
+  if (numFound < 2) throw std::runtime_exception("Fatal error: Cipher's key does not contain both JOKERs");
+  return output;
 }
 
 void Cipher::tripleCut(int _endSlice1, int _startSlice2) {
+  // Use std::rotate to perform the tripleCut
 }
 
 void Cipher::countCut(int _pos) {
+  // Use std::rotate
 }
 
 int Cipher::findOutput() const {
