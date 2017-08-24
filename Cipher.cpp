@@ -91,6 +91,7 @@ std::string Cipher::decrypt(std::string _ciphertext) {
 }
 
 // Private helper methods
+// CHECK: if we need to declare static in implementation file
 std::vector<int> Cipher::convertCharsToInts(std::string _chars) {
   int nChars = _chars.length();
   std::vector<int> output(nChars);
@@ -119,8 +120,8 @@ void Cipher::swapCards(int _pos1, int _pos2) {
   if (_pos2 > Cipher::NCARDS) _pos2 -= Cipher::NCARDS;
   // Check if std::move can be used to speed up: but compiler optimization should catch it anyway
   int temp = key_[_pos2 - 1];
-  key_[_pos2] = key_[_pos1];
-  key_[_pos1] = temp;
+  key_[_pos2 - 1] = key_[_pos1 - 1];
+  key_[_pos1 - 1] = temp;
 }
 
 int Cipher::findJokerA() const {
