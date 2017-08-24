@@ -7,8 +7,7 @@
 #include <exception>
 #include <cctype>
 
-IOManager::IOManager(std::string _inputFile, std::string _outputFile) {
-  // this->plaintext_ to be filled in
+IOManager::IOManager(std::string _inputFile, std::string _outputFile) : outputFile_(_outputFile) {
   std::ifstream fin;
   std::stringstream ss;
   fin.open(_inputFile.c_str());
@@ -22,4 +21,12 @@ IOManager::IOManager(std::string _inputFile, std::string _outputFile) {
   }
   fin.close();
   this->plaintext_ = ss.str();
+}
+
+void IOManager::writeCipherText(std::string _encrypted) {
+  std::ofstream fout;
+  fout.open(outputFile_);
+  if (fout.fail()) throw std::invalid_argument("Bad output file.");
+  fout << _encrypted;
+  fout.close();
 }

@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
     assert(io.plaintext_ == "plaintext");
     // std::cout << "Passed test of parsing the plaintext file.\n";
     std::cout << "Constructing the Cipher.\n";
-    Cipher cipher();
+    Cipher cipher;
     std::cout << "Generating the key.\n";
     std::vector<int> key = cipher.generateKey();
     std::cout << "The initialized key is: ";
@@ -32,11 +32,14 @@ int main(int argc, char** argv) {
     std::cout << "The ciphertext is: " << encrypted << "\n";
     std::cout << "Performing decryption.\n";
     std::string decrypted = cipher.decrypt(encrypted);
-    std::cout << "The decrypted ciphertext is: " << decrpyted << "\n";
+    std::cout << "The decrypted ciphertext is: " << decrypted << "\n";
     assert(io.plaintext_ == decrypted);
+    std::cout << "Writing ciphertext to the output file.\n";
+    io.writeCipherText(encrypted);
     std::cout << "Good-bye!\n";
-  } catch (std::exception e) {
+  } catch (std::exception &e) {
     std::cout << "Some exception occurred. Please debug.\n";
+    std::cout << e.what();
   }
   return 0;
 }

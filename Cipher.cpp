@@ -2,23 +2,20 @@
 // Cipher.h also gives vector, utility, string
 
 #include <algorithm>
+#include <exception>
+#include <sstream>
 
 Cipher::Cipher() {
-  key_.resize(Cipher::NCARDS); // CHECK IF SYNTAX CORRECT
-  // key_.reserve(Cipher::NCARDS);
-  // Find some way of allocating 54 ints, not reserving memory
+  key_.resize(Cipher::NCARDS);
 }
 
 std::vector<int> Cipher::generateKey() {
-  // Loop, or preferably use a range-based mutator to put integers 1 to 54 into the vector
   int val = 1;
-  for (auto i : this->key_) {
+  for (auto i = this->key_.begin(); i != key_.end(); ++i) {
     *i = val++;
   }
-  // Use std::shuffle (<algorithm>) to shuffle the vector
-  std::shuffle(key_.begin(), key_.end());
-  // Make a copy for initKey_ as well, because we want to keep the initial key even after
-  // the encryption process
+  std::random_shuffle(key_.begin(), key_.end());
+  // Keep the initial randomly-generated key
   this->initKey_ = key_;
   return key_;
 }
@@ -39,7 +36,7 @@ std::vector<int> Cipher::generateKeystream(int _n) {
         Using 1-indexing, find the card which the index points to. That card's value is the output!
 	If that card is a JOKER, do nothing and start all over again from step 1.
    */
-  std::vector<int> output(_n);
+  keystream_.resize(_n);
   int count = 0; int pos; std::pair<int, int> jokers;
   while (count < _n) {
     pos = this->findJokerA();
@@ -48,7 +45,7 @@ std::vector<int> Cipher::generateKeystream(int _n) {
     this->swapCards(pos, pos + 1);
     this->swapCards(pos + 1, pos + 2);
     jokers = this->findJokers();
-    this->tripleCut(jokers.first, joker.second);
+    this->tripleCut(jokers.first, jokers.second);
     pos = key_[Cipher::NCARDS - 1];
     this->countCut(pos); // Handle the JOKER exception inside helper method
     keystream_[count] = this->findOutput(); // Check if std::vector<int> output(_n) was initialized with len 54!
@@ -58,6 +55,7 @@ std::vector<int> Cipher::generateKeystream(int _n) {
       ++count;
     }
   }
+  return keystream_;
 }
 
 std::string Cipher::encrypt(std::string _plaintext) {
@@ -91,15 +89,12 @@ std::string Cipher::decrypt(std::string _ciphertext) {
 }
 
 // Private helper methods
-// CHECK: if we need to declare static in implementation file
 std::vector<int> Cipher::convertCharsToInts(std::string _chars) {
   int nChars = _chars.length();
   std::vector<int> output(nChars);
-  // Find an efficient way to turn the string into int vector
-  // Convert string to vector<char>
-  constexpr char below_a = 'a' - 1; // CHECK that you can declare with constexpr in function scope
+  constexpr char below_a = 'a' - 1;
   for (int i = 0; i < nChars; ++i) {
-    output[i] = static_cast<int>(_chars[i] - below_a); // CHECK operator[] returns char!
+    output[i] = static_cast<int>(_chars[i] - below_a);
   }
   return output;
 }
@@ -107,9 +102,9 @@ std::vector<int> Cipher::convertCharsToInts(std::string _chars) {
 std::string Cipher::convertIntsToChars(std::vector<int> _ints) {
   std::stringstream outs;
   constexpr char below_a = 'a' - 1;
-  for (auto i : _ints) {
+  for (int i : _ints) {
     // Convert int to char, then stream into outs
-    outs << static_cast<char>(*i + below_a);
+    outs << static_cast<char>(i + below_a);
   }
   return outs.str();
 }
@@ -118,7 +113,6 @@ void Cipher::swapCards(int _pos1, int _pos2) {
   // First, catch the edge-case of the inputs being >= NCARDS
   if (_pos1 > Cipher::NCARDS) _pos1 -= Cipher::NCARDS;
   if (_pos2 > Cipher::NCARDS) _pos2 -= Cipher::NCARDS;
-  // Check if std::move can be used to speed up: but compiler optimization should catch it anyway
   int temp = key_[_pos2 - 1];
   key_[_pos2 - 1] = key_[_pos1 - 1];
   key_[_pos1 - 1] = temp;
@@ -126,18 +120,14 @@ void Cipher::swapCards(int _pos1, int _pos2) {
 
 int Cipher::findJokerA() const {
   // JokerA's value is 53
-  // Use a C++11-style std::find
-  std::vector<int>::iterator it;
-  it = std::find(key_.begin(), key_.end(), 53);
+  std::vector<int>::const_iterator it = std::find(key_.begin(), key_.end(), 53);
   if (it == key_.end()) throw std::runtime_error("Fatal error: Cipher's key missing JOKERA value");
   return *it;
 }
 
 int Cipher::findJokerB() const {
   // JokerB's value is 54
-  // Use a C++11-style std::find
-  std::vector<int>::iterator it;
-  it = std::find(key_.begin(), key_.end(), 54);
+  std::vector<int>::const_iterator it = std::find(key_.begin(), key_.end(), 54);
   if (it == key_.end()) throw std::runtime_error("Fatal error: Cipher's key missing JOKERA value");
   return *it;
 }
@@ -145,14 +135,14 @@ int Cipher::findJokerB() const {
 std::pair<int, int> Cipher::findJokers() const {
   // Jokers are 53 and 54
   std::pair<int, int> output; int numFound = 0;
-  for (auto it : key_) {
-    if (*it > 52) {
+  for (auto i = key_.begin(); i != key_.end(); ++i) {
+    if (*i > 52) {
       // >52 means it is a JOKERA or JOKERB
       if (!numFound) {
-	output.first = it - key_.begin() + 1;
+	output.first = i - key_.begin() + 1;
         ++numFound;
       } else {
-	output.second = it - key_.begin() + 1;
+	output.second = i - key_.begin() + 1;
 	++numFound;
       }
     }
@@ -168,7 +158,6 @@ void Cipher::tripleCut(int _endSlice1, int _startSlice2) {
   // _endSlice1 position (1-indexed) is 4, which is 3 0-indexed. Notice how it's not inclusive.
   // "first slice is everything above the first Joker"
   // "third slice is everything below the second Joker"
-  // CHECK: WHAT IF YOU ROTATE EMPTY RANGE
   // First swap: first + second slice with third slice
   // Second swap: second slice with third slice
   int firstPivot = _startSlice2;
