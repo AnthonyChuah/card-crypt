@@ -50,7 +50,7 @@ std::vector<int> Cipher::generateKeystream(int _n) {
     jokers = this->findJokers();
     this->tripleCut(jokers.first, joker.second);
     pos = key_[Cipher::NCARDS - 1];
-    this->countCut(pos); // Handle the pos == 54 exception inside helper method
+    this->countCut(pos); // Handle the JOKER exception inside helper method
     keystream_[count] = this->findOutput(); // Check if std::vector<int> output(_n) was initialized with len 54!
     if (keystream_[count] < 0) {
       continue;
@@ -67,7 +67,12 @@ std::string Cipher::encrypt(std::string _plaintext) {
   generateKeystream(nChars);
   // Now add then mod 26
   std::vector<int> ctextInInts(nChars);
+  for (int i = 0; i < nChars; ++i) {
+    ctextInInts[i] = textInInts[i] + keystream_[i];
+    if (ctextInInts[i] > Cipher::RADIX) ctextInInts[i] -= Cipher::RADIX;
+  }
   // Translate back to text form by iterating over vector
+  return Cipher::convertIntsToChars(ctextInInts);
 }
 
 std::string Cipher::decrypt(std::string _ciphertext) {
@@ -77,7 +82,12 @@ std::string Cipher::decrypt(std::string _ciphertext) {
   generateKeystream(nChars);
   // Now subtract then mod 26. Remember negatives should wrap around
   std::vector<int> textInInts(nChars);
+  for (int i = 0; i < nChars; ++i) {
+    textInInts[i] = ctextInInts[i] - keystream_[i];
+    if (textInInts[i] < 1) textInInts[i] += Cipher::RADIX;
+  }
   // Translate back to text form by iterating over vector
+  return Cipher::convertIntsToChars(textInInts);
 }
 
 // Private helper methods
@@ -85,13 +95,20 @@ std::vector<int> Cipher::convertCharsToInts(std::string _chars) {
   int nChars = _chars.length();
   std::vector<int> output(nChars);
   // Find an efficient way to turn the string into int vector
+  // Convert string to vector<char>
+  constexpr char below_a = 'a' - 1; // CHECK that you can declare with constexpr in function scope
+  for (int i = 0; i < nChars; ++i) {
+    output[i] = static_cast<int>(_chars[i] - below_a); // CHECK operator[] returns char!
+  }
   return output;
 }
 
 std::string Cipher::convertIntsToChars(std::vector<int> _ints) {
   std::stringstream outs;
+  constexpr char below_a = 'a' - 1;
   for (auto i : _ints) {
     // Convert int to char, then stream into outs
+    outs << static_cast<char>(*i + below_a);
   }
   return outs.str();
 }
@@ -111,7 +128,7 @@ int Cipher::findJokerA() const {
   // Use a C++11-style std::find
   std::vector<int>::iterator it;
   it = std::find(key_.begin(), key_.end(), 53);
-  if (it == key_.end()) throw std::runtime_exception("Fatal error: Cipher's key missing JOKERA value");
+  if (it == key_.end()) throw std::runtime_error("Fatal error: Cipher's key missing JOKERA value");
   return *it;
 }
 
@@ -120,7 +137,7 @@ int Cipher::findJokerB() const {
   // Use a C++11-style std::find
   std::vector<int>::iterator it;
   it = std::find(key_.begin(), key_.end(), 54);
-  if (it == key_.end()) throw std::runtime_exception("Fatal error: Cipher's key missing JOKERA value");
+  if (it == key_.end()) throw std::runtime_error("Fatal error: Cipher's key missing JOKERA value");
   return *it;
 }
 
@@ -139,7 +156,7 @@ std::pair<int, int> Cipher::findJokers() const {
       }
     }
   }
-  if (numFound < 2) throw std::runtime_exception("Fatal error: Cipher's key does not contain both JOKERs");
+  if (numFound < 2) throw std::runtime_error("Fatal error: Cipher's key does not contain both JOKERs");
   return output;
 }
 
@@ -150,7 +167,14 @@ void Cipher::tripleCut(int _endSlice1, int _startSlice2) {
   // _endSlice1 position (1-indexed) is 4, which is 3 0-indexed. Notice how it's not inclusive.
   // "first slice is everything above the first Joker"
   // "third slice is everything below the second Joker"
-  // GOOGLE: WHAT IF YOU ROTATE EMPTY RANGE
+  // CHECK: WHAT IF YOU ROTATE EMPTY RANGE
+  // First swap: first + second slice with third slice
+  // Second swap: second slice with third slice
+  int firstPivot = _startSlice2;
+  std::rotate(key_.begin(), key_.begin() + firstPivot, key_.end());
+  int lenThirdSlice = Cipher::NCARDS - _startSlice2; // This defines the start
+  int lenFirstSlice = _endSlice1 - 1; // This defines the pivot point, since it's Third:First:Second now
+  std::rotate(key_.begin() + lenThirdSlice, key_.begin() + lenThirdSlice + lenFirstSlice, key_.end());
 }
 
 void Cipher::countCut(int _pos) {
@@ -166,7 +190,7 @@ int Cipher::findOutput() const {
   int topCardValue = key_[0];
   int output = key_[topCardValue - 1];
   if (output < 0 || output > Cipher::NCARDS)
-    throw std::runtime_exception("Fatal error: there should not be a card with a negative face value");
+    throw std::runtime_error("Fatal error: there should not be a card with a negative face value");
   if (output > 52) output = -1;
   if (output > Cipher::RADIX) output -= Cipher::RADIX;
   return output;
